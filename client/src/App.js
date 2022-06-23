@@ -16,7 +16,7 @@ class App extends Component
     .catch(err => console.log(err));
 
     this.timer = setInterval(() => {
-      this.getSystemUptime();
+      this.getDataFromServer();
     }, 1000);
   }
 
@@ -37,8 +37,8 @@ class App extends Component
     return body;
   }
 
-  getSystemUptime = async () => {
-    const response = await fetch('/SystemUptime');
+  getDataFromServer = async () => {
+    const response = await fetch('/ServerData');
     const body = await response.json();
 
     if (response.status !== 200)

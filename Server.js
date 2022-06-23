@@ -1,11 +1,47 @@
 var snmp = require("net-snmp");
 var http = require("http");
 var express = require("express");
+var mongo = require("mongodb");
 
 
 // Global strings
 var systemUptime = "System Uptime: Not Set";
 var localDateTime = "Local Date/Time: Not Set";
+
+
+// Create a MongoDB client.
+var client = mongo.MongoClient;
+var url = "mongodb://localhost:27017/TimeDateDB";
+
+function addToDatabase(hostname, systemUptime, localDateTime)
+{
+    client.connect(url, function(err, db)
+    {
+        if (err)
+        {
+            throw err;
+        }
+
+        var dbo = db.db("TimesAndDatesDatabase");
+        //console.log("Database created!");
+
+        var document = { Hostname: hostname, SystemUptime: systemUptime, LocalDateTime: localDateTime };
+
+        //dbo.createCollection("TimesAndDates", function(err, res)
+        //console.log("Collection(Table) created!");
+        dbo.collection("TimesAndDates").insertOne(document, function(err, res)
+        {
+            if (err)
+            {
+                throw err;
+            }
+
+            console.log("Inserted document: " + "Hostname: " + hostname + ", SystemUptime: " + systemUptime + ", LocalDateTime: " + localDateTime);
+
+            db.close();
+        });
+    });
+}
 
 
 // Create an app with express.
@@ -18,8 +54,9 @@ app.get('/express_backend', (request, response) => {
     response.send({ express: "Your express backend is connected to React!" });
 });
 
-app.get('/SystemUptime', (request, response) => {
+app.get('/ServerData', (request, response) => {
     response.send({ systemUptime: systemUptime, localDateTime: localDateTime });
+    addToDatabase(request.hostname, systemUptime, localDateTime);
 });
 
 
