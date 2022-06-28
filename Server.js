@@ -4,16 +4,20 @@ var express = require("express");
 var mongo = require("mongodb");
 
 
-// Global strings
-var systemUptime = "System Uptime: Not Set";
-var localDateTime = "Local Date/Time: Not Set";
+// Global variables
+var systemUptimeStr = "System Uptime: Not Set";
+var systemUptime = 0;
+var systemUptimeInstanceStr = "System Uptime: Not Set";
+var systemUptimeInstance = 0;
+var localDateTimeStr = "Local Date/Time: Not Set";
+var localDateTime;
 
 
 // Create a MongoDB client.
 var client = mongo.MongoClient;
 var url = "mongodb://localhost:27017/TimeDateDB";
 
-function addToDatabase(hostname, systemUptime, localDateTime)
+function addToDatabase()
 {
     client.connect(url, function(err, db)
     {
@@ -25,7 +29,7 @@ function addToDatabase(hostname, systemUptime, localDateTime)
         var dbo = db.db("TimesAndDatesDatabase");
         //console.log("Database created!");
 
-        var document = { Hostname: hostname, SystemUptime: systemUptime, LocalDateTime: localDateTime };
+        var document = { SystemUptime: systemUptime, SystemUpTimeInstance: systemUptimeInstance, LocalDateTime: localDateTime };
 
         //dbo.createCollection("TimesAndDates", function(err, res)
         //console.log("Collection(Table) created!");
@@ -36,7 +40,7 @@ function addToDatabase(hostname, systemUptime, localDateTime)
                 throw err;
             }
 
-            console.log("Inserted document: " + "Hostname: " + hostname + ", SystemUptime: " + systemUptime + ", LocalDateTime: " + localDateTime);
+            console.log("Inserted document: " + "SystemUptime: " + systemUptime + ", SystemUptimeInstance: " + systemUptimeInstance + ", LocalDateTime: " + localDateTime);
 
             db.close();
         });
@@ -55,8 +59,8 @@ app.get('/express_backend', (request, response) => {
 });
 
 app.get('/ServerData', (request, response) => {
-    response.send({ systemUptime: systemUptime, localDateTime: localDateTime });
-    addToDatabase(request.hostname, systemUptime, localDateTime);
+    response.send({ systemUptime: systemUptimeStr, systemUptimeInstance: systemUptimeInstanceStr, localDateTime: localDateTimeStr });
+    addToDatabase();
 });
 
 
@@ -94,7 +98,8 @@ function main()
                     //console.log (varbinds[i].oid + " = " + varbinds[i].value);
                     //console.log("get success!")
                 }
-
+                
+                // System Uptime (Instance)
                 if (varbinds[i].oid == "1.3.6.1.2.1.1.3.0")
                 {
                     var days = Math.floor((varbinds[i].value / 100) / (3600 * 24));
@@ -102,10 +107,11 @@ function main()
                     var minutes = Math.floor(((varbinds[i].value / 100) % 3600) / 60);
                     var seconds = Math.floor((varbinds[i].value / 100) % 60);
 
-                    //console.log("System Uptime: " + (varbinds[i].value / 100));
-
-                    //console.log("System Uptime (Instance): " + days + " Days, " + hours + " Hours, " + minutes + " Minutes, " + seconds + " Seconds");
+                    systemUptimeInstance = Math.round(((varbinds[i].value / 100) % (3600 * 24)) / 3600 * 100) / 100;
+                    systemUptimeInstanceStr = "System Uptime (Instance): " + systemUptimeInstance + " Hours";
+                    console.log("System Uptime (Instance) (Hours): " + systemUptimeInstance);
                 }
+                // System Uptime
                 else if (varbinds[i].oid == "1.3.6.1.2.1.25.1.1.0")
                 {
                     var days = Math.floor((varbinds[i].value / 100) / (3600 * 24));
@@ -113,26 +119,16 @@ function main()
                     var minutes = Math.floor(((varbinds[i].value / 100) % 3600) / 60);
                     var seconds = Math.floor((varbinds[i].value / 100) % 60);
 
-                    //console.log("System Uptime: " + (varbinds[i].value / 100));
-
-                    console.log("System Uptime: " + days + " Days, " + hours + " Hours, " + minutes + " Minutes, " + seconds + " Seconds");
-                    systemUptime = "System Uptime: " + days + " Days, " + hours + " Hours, " + minutes + " Minutes, " + seconds + " Seconds";
+                    //systemUptimeStr = "System Uptime: " + days + " Days, " + hours + " Hours, " + minutes + " Minutes, " + seconds + " Seconds";
+                    //console.log("System Uptime: " + days + " Days, " + hours + " Hours, " + minutes + " Minutes, " + seconds + " Seconds");
+                    systemUptime = Math.round(((varbinds[i].value / 100) % (3600 * 24)) / 3600 * 100) / 100;
+                    systemUptimeStr = "System Uptime: " + systemUptime + " Hours";
+                    console.log("System Uptime (Hours): " + systemUptime);
                 }
+                // Local Date/Time
                 else if (varbinds[i].oid == "1.3.6.1.2.1.25.1.2.0")
                 {
-                    //console.log("System Date: " + varbinds[i].value.length);
-
-                    
-                    var accumBuff = Buffer.alloc(8);
-                    for (var j = 0; j < 7; j++)
-                    {
-                        accumBuff.writeUint8(varbinds[i].value[j], j);
-                    }
-                    accumBuff.writeUint8(0, 7)
-                    //console.log(accumBuff);
-                    var accumDate = new Date(accumBuff.buffer);
-                    //console.log(accumDate.toString());
-
+                    // Convert byte string to a Date object.
                     var buff = Buffer.from(varbinds[i].value);
 
                     date = new Date(
@@ -143,12 +139,11 @@ function main()
                         buff.readUInt8(5),
                         buff.readUInt8(6));
                     console.log(date.toString());
-                    localDateTime = date.toString();
+                    localDateTimeStr = date.toString();
+                    localDateTime = date;
                 }
             }
         }
         //session.close ();
     });
 }
-
-//var mainFunc = main();

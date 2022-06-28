@@ -5,7 +5,8 @@ import './App.css';
 class App extends Component
 {
   state = { data: null,
-    sysUptime: "System Uptime: Not Set",
+    systemUptime: "System Uptime: Not Set",
+    systemUptimeInstance: "System Uptime Instance: Not Set",
     localDateTime: "Local Date/Time: Not Set"
   };
 
@@ -46,7 +47,8 @@ class App extends Component
       throw Error(body.message);
     }
 
-    this.state.sysUptime = body.systemUptime;
+    this.state.systemUptime = body.systemUptime;
+    this.state.systemUptimeInstance = body.systemUptimeInstance;
     this.state.localDateTime = body.localDateTime;
     //console.log(this.state.sysUptime);
     this.setState({ state: this.state });
@@ -63,7 +65,8 @@ class App extends Component
           <h1 className="App-title">Welcome to React</h1>
         </header>
         <p className="App-intro">{this.state.data}</p>
-        <p className="System Uptime">{this.state.sysUptime}</p>
+        <p className="System Uptime">{this.state.systemUptime}</p>
+        <p className="System Uptime Instance">{this.state.systemUptimeInstance}</p>
         <p className="Local Date/Time">{this.state.localDateTime}</p>
       </div>
     );
